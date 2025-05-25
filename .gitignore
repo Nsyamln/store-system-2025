@@ -1,0 +1,5 @@
+# .gitignore
+application.properties
+application.yml
+.env
+storeelin.sql
