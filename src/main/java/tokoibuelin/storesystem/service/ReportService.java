@@ -19,7 +19,7 @@ import tokoibuelin.storesystem.entity.SaleDetails;
 import tokoibuelin.storesystem.model.Response;
 import tokoibuelin.storesystem.model.response.CashFlowDto;
 import tokoibuelin.storesystem.model.response.SaleDto;
-import tokoibuelin.storesystem.repository.ProfitSharingRepository;
+import tokoibuelin.storesystem.repository.ConsignmentRepository;
 import tokoibuelin.storesystem.repository.SaleRepository;
 
 import java.io.ByteArrayOutputStream;
@@ -37,7 +37,7 @@ public class ReportService extends AbstractService{
     private SaleRepository saleRepository;
 
     @Autowired
-    private ProfitSharingRepository profitSharingRepository;
+    private ConsignmentRepository consignmentRepository;
 
     public ByteArrayOutputStream createSaleReportByMethod(final String paymentMethod, String startDate, String endDate) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -345,7 +345,7 @@ public class ReportService extends AbstractService{
             Long totalCash = saleRepository.sumByPaymentMethod(startDate, endDate, "CASH");
             Long totalShopeepay = saleRepository.sumByPaymentMethod(startDate, endDate, "SHOPEEPAY");
             Long totalPenerimaan = totalPenjualan;
-            Long totalSharing = profitSharingRepository.sumSharing(startDate, endDate);
+            Long totalSharing = consignmentRepository.sumSharing(startDate, endDate);
             Long kasMasuk = totalPenjualan;
             Long kasKeluar = totalSharing;
             Long kasBersih = kasMasuk - kasKeluar;
@@ -380,7 +380,7 @@ public class ReportService extends AbstractService{
         Long totalCash = saleRepository.sumByPaymentMethod(startDate, endDate, "CASH");
         Long totalShopeepay = saleRepository.sumByPaymentMethod(startDate, endDate, "SHOPEEPAY");
         Long totalPenerimaan = totalPenjualan;
-        Long totalSharing = profitSharingRepository.sumSharing(startDate, endDate);
+        Long totalSharing = consignmentRepository.sumSharing(startDate, endDate);
         Long kasMasuk = totalPenjualan;
         Long kasKeluar = totalSharing;
         Long kasBersih = kasMasuk - kasKeluar;

@@ -5,13 +5,13 @@ import java.time.OffsetDateTime;
 
 public record ProfitDto(
         String profitSharingId,
-                        String saleId,
-                        String productId,
-                        String supplierId,
-                        int productQuantity,
-                        BigDecimal totalPurchasePrice,
-                        String status,
-                        OffsetDateTime paymentDate
+        String saleId,
+        String productId,
+        String supplierId,
+        int productQuantity,
+        BigDecimal totalPurchasePrice,
+        String status,
+        OffsetDateTime paymentDate
                         
 ) {
 }

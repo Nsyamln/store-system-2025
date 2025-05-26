@@ -5,6 +5,9 @@ import com.itextpdf.layout.element.LineSeparator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import tokoibuelin.storesystem.entity.Consignment;
+import tokoibuelin.storesystem.entity.Product;
 import tokoibuelin.storesystem.entity.Sale;
 import tokoibuelin.storesystem.entity.SaleDetails;
 import tokoibuelin.storesystem.entity.User;
@@ -12,6 +15,8 @@ import tokoibuelin.storesystem.model.Authentication;
 import tokoibuelin.storesystem.model.Response;
 import tokoibuelin.storesystem.model.request.OfflineSaleReq;
 import tokoibuelin.storesystem.model.response.SaleDto;
+import tokoibuelin.storesystem.repository.ConsignmentRepository;
+import tokoibuelin.storesystem.repository.ProductRepository;
 import tokoibuelin.storesystem.repository.SaleRepository;
 import tokoibuelin.storesystem.repository.UserRepository;
 import com.itextpdf.kernel.font.PdfFont;
@@ -29,19 +34,25 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class SaleService extends AbstractService{
     private final SaleRepository saleRepository;
     private final UserRepository userRepository;
+    private final ConsignmentRepository consignmentRepository;
+    private final ProductRepository productRepository;
     private final byte[] jwtKey;
     @Autowired AddressService addressService;
 
-    public SaleService(final SaleRepository saleRepository, final UserRepository userRepository, final byte[] jwtKey){
+    public SaleService(final SaleRepository saleRepository, final UserRepository userRepository, final ConsignmentRepository consignmentRepository, final  ProductRepository productRepository, final byte[] jwtKey){
         this.saleRepository = saleRepository;
         this.userRepository = userRepository;
+        this.consignmentRepository = consignmentRepository;
+        this.productRepository = productRepository;
         this.jwtKey = jwtKey;
     }
 
@@ -72,6 +83,42 @@ public class SaleService extends AbstractService{
                     detailReq.price()
             )).collect(Collectors.toList());
             final Long savedSaleDetails = saleRepository.saveSaleDetails(saleDetails);
+            List<Consignment> consignmentsToSave = new ArrayList<>();
+
+            for (SaleDetails detail : saleDetails) {
+                Optional<Product> productOpt = productRepository.findById(detail.productId());
+
+                if (productOpt.isPresent()) {
+                    Product product = productOpt.get();
+                    if (product.isConsignmentProduct()) {
+                        System.out.println("Produk titipan terdeteksi: " + detail.productName() + " (ID: " + detail.productId() + ")");
+                        Long consignmentTotalPrice = (product.purchasePrice() != null) ?
+                                                    product.purchasePrice() * detail.quantity() :
+                                                    0L; 
+                        Consignment consignmentRecord = new Consignment(
+                            null, 
+                            savedSale,
+                            null, 
+                            detail.productId(),
+                            product.supplierId(), 
+                            detail.quantity(),
+                            consignmentTotalPrice, 
+                            "UNPAID", 
+                            null 
+                        );
+                            consignmentsToSave.add(consignmentRecord);
+                    } else {
+                        System.out.println("Produk reguler: " + detail.productName() + " (ID: " + detail.productId() + ")");
+                    }
+                } else {
+                    System.out.println("Peringatan: Produk dengan ID " + detail.productId() + " tidak ditemukan di repository.");
+                }
+            }
+
+            if (!consignmentsToSave.isEmpty()) {
+                System.out.println("Ditemukan " + consignmentsToSave.size() + " produk titipan yang perlu dicatat konsinyasinya.");
+                consignmentRepository.saveConsignment(consignmentsToSave);
+            }
             if (0L == savedSaleDetails ) {
                 return Response.create("05", "01", "Gagal menambahkan Detail Penjualan", null);
             }

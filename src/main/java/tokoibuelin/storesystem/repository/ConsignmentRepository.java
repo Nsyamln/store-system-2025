@@ -1,18 +1,15 @@
 package tokoibuelin.storesystem.repository;
 
-import java.sql.PreparedStatement;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
-
 import tokoibuelin.storesystem.entity.Consignment;
-import tokoibuelin.storesystem.entity.OrderDetails;
 
 @Repository
 public class ConsignmentRepository {
@@ -40,29 +37,25 @@ public class ConsignmentRepository {
         }
     }
 
-    // public String saveConsignment(final Consignment consignment) {
-    //     final KeyHolder keyHolder = new GeneratedKeyHolder();
-    //     try {
-    //         int updateCount = jdbcTemplate.update(con -> {
-    //             PreparedStatement ps = consignment.insert(con);
-    //             return ps;
-    //         }, keyHolder);
+    public Long sumSharing(String startDate, String endDate) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDate startLocalDate = LocalDate.parse(startDate, formatter);
+        LocalDate endLocalDate = LocalDate.parse(endDate, formatter);
 
-    //         if (updateCount != 1) {
-    //             return null; // atau return 0L sesuai kebutuhan
-    //         }
+        Timestamp startTimestamp = Timestamp.valueOf(startLocalDate.atStartOfDay());
+        Timestamp endTimestamp = Timestamp.valueOf(endLocalDate.atTime(LocalTime.MAX));
 
-    //         // Ambil hasil dari KeyHolder sebagai String
-    //         Map<String, Object> keys = keyHolder.getKeys();
-    //         if (keys != null && keys.containsKey("consignment_id")) {
-    //             return (String) keys.get("consignment_id");
-    //         }
-
-    //         return null;
-    //     } catch (Exception e) {
-    //         log.error("Error during saveConsignment: {}", e.getMessage());
-    //         return null; 
-    //     }
-    // }
+        System.out.println("Start Timestamp3: " + startTimestamp);
+        System.out.println("End Timestamp3: " + endTimestamp);
+        try {
+            String sql = "SELECT SUM(total_purchase_price) AS total FROM profit_sharing WHERE payment_date BETWEEN ? AND ? ";
+            Long total = jdbcTemplate.queryForObject(sql,new Object[]{startTimestamp, endTimestamp},  Long.class);
+            System.out.println("total Sharing : " + total);
+            return total != null ? total : 0L;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0L;
+        }
+    }
 
 }
